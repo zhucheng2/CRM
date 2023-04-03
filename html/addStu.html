@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/public.css">
+    <link rel="stylesheet" href="../css/addStu.css">
+    <title>CRM管理系统</title>
+    <script>
+        // 未登录，则先登录
+        if (!localStorage.getItem('curUser')) {
+            alert('请登录！');
+            location.replace('../index.html');
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img class="logo" src="../asset/images/logo.png" alt="">
+        <img class="menu" src="../asset/menu.svg"></img>
+        <ul>
+            <li><a href="#"><img src="../asset/images/avatar.png" alt=""><span>姓名</span></a></li>
+            <li><a href="#"><img src="../asset/images/notice.png" alt="">通知公告</a></li>
+            <li><a href="../index.html"><img src="../asset/images/quit.png" alt="">退出登录</a></li>
+        </ul>
+    </header>
+    <nav id="nav">
+        <a href="#">教学点管理</a>
+        <ul class="sidebar">
+            <li>
+                <a href="./classManage.html">班级管理</a>
+            </li>
+            <li>
+                <a href="./addClass.html">添加班级</a>
+            </li>
+            <li>
+                <a href="./stuManage.html">学生管理</a>
+            </li>
+            <li class="active">
+                <a href="#">添加学生</a>
+            </li>
+        </ul>
+    </nav>
+    <div class="main">
+        <div class="nav-l">
+            <a href="#">教学点管理</a>
+            <ul class="sidebar">
+                <li>
+                    <a href="./classManage.html">班级管理</a>
+                </li>
+                <li>
+                    <a href="./addClass.html">添加班级</a>
+                </li>
+                <li>
+                    <a href="./stuManage.html">学生管理</a>
+                </li>
+                <li class="active">
+                    <a href="#">添加学生</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <div>添加学生</div>
+            <form action="#" method="get">
+                <div class="stu-name">
+                    <label for="sName">姓名：</label><input type="text" name="sName" id="sName">
+                </div>
+                <div class="stu-id">
+                    <label for="sId">学号：</label><input type="text" name="sId" id="sId" placeholder="001~999间的整数">
+                </div>
+                <div class="age-class">
+                    <input type="number" name="sAge" placeholder="学生年龄16~40之间">
+                    <select name="sClass">
+                        <option value="" selected disabled>请选择班级</option>
+                    </select>
+                </div>
+                <div class="sex">
+                    <label for="male">女：</label><input type="radio" name="sSex" value="女" id="male">
+                    <label for="female"> 男：</label><input type="radio" name="sSex" value="男" id="female">
+                </div>
+                <div class="btn">
+                    <input type="reset" value="重置">
+                    <button>添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+    <script>
+        //登出操作、获取当前用户
+        var curUser = document.querySelector('header li:first-child span');
+        var logout = document.querySelector('header li:last-child');
+        curUser.textContent = localStorage.getItem('curUser');
+        logout.onclick = function () {
+            localStorage.removeItem('curUser');
+            sessionStorage.removeItem('curPage');
+        }
+
+        var sName = document.getElementsByName('sName')[0];
+        var sId = document.getElementsByName('sId')[0];
+        var sAge = document.getElementsByName('sAge')[0];
+        var sClass = document.getElementsByName('sClass')[0];
+        var sSex = document.getElementsByName('sSex');
+        var btnAdd = document.getElementsByTagName('button')[0];
+        var obj = {};
+        var t_data = [], stuList = [], cList = [];
+
+        //移动端menu 绑定click事件
+        menuClick();
+
+        //从数据库中取出 现有 班级 信息，去重、并挂载
+        cList = JSON.parse(localStorage.getItem('cList'));
+        for (var ele of cList) {
+            t_data.push(ele.date);
+        }
+        for (var ele of new Set(t_data)) {
+            var _date = ele.slice(2).replace('-', '');
+            var optEle = document.createElement('option');
+            optEle.textContent = _date;
+            sClass.append(optEle);
+        }
+
+        // 从数据库中取出 现有 已去重、降序班级 信息，挂载
+        for (var ele of JSON.parse(localStorage.getItem('cLevelList'))) {
+            var optEle = document.createElement('option');
+            optEle.textContent = ele;
+            sClass.append(optEle);
+        }
+
+        // 【若验证不通过，必须 清空文本框，并且 加上return！！不然会无法拦截请求】
+        sName.onchange = function () {
+            // 姓名 汉字！
+            if (!/^[\u4e00-\u9fa5]{0,}$/.test(sName.value)) {
+                sName.value = '';
+                alert('请填写 汉字');
+                return;
+            }
+        }
+        sId.onchange = function () {
+            idList = JSON.parse(localStorage.getItem('idList'));
+            var ind = idList.indexOf(sId.value);//遍历idList，目标id是否 已存在。若找到，则返回其 索引
+            if (ind === -1) {
+                // 学号限制在[001,999]之间
+                if (!/^\d{3}$/.test(sId.value) || sId.value == '000') {
+                    sId.value = '';
+                    alert('学号 格式错误');
+                    return;
+                }
+            } else {
+                sId.value = '';
+                alert('该学号 已存在！');
+                return;
+            }
+        }
+        sAge.onchange = function () {
+            // 年龄限制在[16,40]之间
+            if (!/^(1[6-9]|[23]\d|4[0])$/.test(sAge.value)) {
+                sAge.value = 16;
+            }
+        }
+
+        // 单选按钮点击，根据checked类名标记，获取value
+        sSex[0].onclick = function () {
+            for (let ele of sSex) {
+                ele.removeAttribute('class');
+            }
+            this.className = 'checked';
+        }
+        sSex[1].onclick = function () {
+            for (let ele of sSex) {
+                ele.removeAttribute('class');
+            }
+            this.className = 'checked';
+        }
+
+        // 添加按钮
+        btnAdd.onclick = function (e) {
+            e.preventDefault();
+            if (sName.value != '' && sId.value != '' && sAge.value != '' && sClass.value != '' && sSex.value != '') {
+                obj = {
+                    sName: sName.value,
+                    sId: sId.value,
+                    sAge: sAge.value,
+                    sClass: sClass.value,
+                    sSex: sSex[0].className == 'checked' ? sSex[0].value : sSex[1].value
+                };
+                console.log(sSex[0].className);
+                stuList = JSON.parse(localStorage.getItem('stuList'));
+                stuList.push(obj);
+
+                // 添加 学生后，需要对 数据 重排序！！
+                stuUpSort();
+
+                alert('已添加！');
+                sName.value = '';
+                sId.value = '';
+                sAge.value = '';
+                sClass.value = '';
+                sSex.value = '';
+                location.href = './stuManage.html';
+
+            } else {
+                alert('请填写完整！')
+            }
+        }
+
+        // 以学生ID升序
+        function stuUpSort() {
+            var idList = [], _stuList = [], idArr = [];
+            stuList.forEach((item, ind) => {
+                // 将每个日期对应的索引(每个索引3位数，不足前面补0)拼接到最后，整体 升序！
+                idArr.push(item.sId + String(ind).padStart(3, '0'));
+            });
+
+            idArr = idArr.sort();
+            // console.log(idArr);
+            // 再分离出、并遍历 排序后的索引数组idArr，返回 以id 升序的 学生列表_stuList
+
+            _stuList = idArr.map(ele => {
+                //学生 id 列表
+                idList.push(ele.slice(0, 3));
+                // '数字'字符串转Number，补足的0 自动去掉【学号长度必须相同】
+                return stuList[Number(ele.slice(3))];
+            });
+            // 无编辑、删除操作时，不需要重复更新localStorage。。添加 操作时，必须重排序，更新localStorage
+            localStorage.setItem('stuList', JSON.stringify(_stuList));
+            // 将id列表放入localStorage，以备添加 学生时，保持唯一性
+            localStorage.setItem('idList', JSON.stringify(idList));
+        }
+
+        function menuClick() {
+            var menu = document.querySelector('.menu');
+            var nav = document.getElementsByTagName('nav')[0];
+            var content = document.getElementsByClassName('content')[0];
+            var flag = true;
+            //阻止后代menu的事件冒泡，以免影响祖先body的click事件
+            menu.onclick = function (e) {
+                if (flag) {
+                    nav.style.height = '150px';
+                    content.classList.add('radius');
+                    flag = false;
+                } else {
+                    nav.style.height = '0';
+                    content.classList.remove('radius');
+                    flag = true;
+                }
+                e.stopPropagation();//点击menu时避免触发window.onclik，需要阻止冒泡
+            }
+            // menu展开时，点击整个界面任意区域，menu会自动收起
+            window.onclick = function () {
+                if (!flag) {
+                    nav.style.height = '0';
+                    flag = true;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

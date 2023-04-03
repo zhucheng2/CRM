@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/public.css">
+    <title>CRM管理系统</title>
+    <script>
+        // 未登录，则先登录
+        if (!localStorage.getItem('curUser')) {
+            alert('请登录！');
+            location.replace('../index.html');
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img class="logo" src="../asset/images/logo.png" alt="">
+        <img class="menu" src="../asset/menu.svg"></img>
+        <ul>
+            <li><a href="#"><img src="../asset/images/avatar.png" alt=""><span>姓名</span></a></li>
+            <li><a href="#"><img src="../asset/images/notice.png" alt="">通知公告</a></li>
+            <li><a href="../index.html"><img src="../asset/images/quit.png" alt="">退出登录</a></li>
+        </ul>
+    </header>
+    <nav id="nav">
+        <a href="#">教学点管理</a>
+        <ul class="sidebar">
+            <li>
+                <a href="./classManage.html">班级管理</a>
+            </li>
+            <li>
+                <a href="./addClass.html">添加班级</a>
+            </li>
+            <li>
+                <a href="./stuManage.html">学生管理</a>
+            </li>
+            <li>
+                <a href="./addStu.html">添加学生</a>
+            </li>
+            <li class="active">
+                <a href="#">更改班级信息</a>
+            </li>
+        </ul>
+    </nav>
+    <div class="main">
+        <div class="nav-l">
+            <a href="#">教学点管理</a>
+            <ul class="sidebar">
+                <li>
+                    <a href="./classManage.html">班级管理</a>
+                </li>
+                <li>
+                    <a href="./addClass.html">添加班级</a>
+                </li>
+                <li>
+                    <a href="./stuManage.html">学生管理</a>
+                </li>
+                <li>
+                    <a href="./addStu.html">添加学生</a>
+                </li>
+                <li class="active">
+                    <a href="#">更改班级信息</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <div>添加班级</div>
+            <form action="#" method="get">
+                <!-- cellspacing="0" -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th>开课时间</th>
+                            <th>课程名称</th>
+                            <th>班级状态</th>
+                            <th>课程操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="month" name="date" id="" /></td>
+                            <td>
+                                <select name="classType" id="">
+                                    <option value="" disabled selected>请选择</option>
+                                    <option>前端</option>
+                                    <option>java</option>
+                                    <option>python</option>
+                                    <option>c++</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="classStatus" id="">
+                                    <option value="" disabled selected>请选择</option>
+                                    <option>报名中</option>
+                                    <option>已开课</option>
+                                    <option>已结业</option>
+                                </select>
+                            </td>
+                            <td><button class="update-btn">保存</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </form>
+        </div>
+    </div>
+    <script>
+        //登出操作、获取当前用户
+        var curUser = document.querySelector('header li:first-child span');
+        var logout = document.querySelector('header li:last-child');
+        curUser.textContent = localStorage.getItem('curUser');
+        logout.onclick = function () {
+            localStorage.removeItem('curUser');
+            sessionStorage.removeItem('curPage');
+        }
+
+        var iptDate = document.getElementsByName('date')[0];
+        var iptClassType = document.getElementsByName('classType')[0];
+        var iptClassStatus = document.getElementsByName('classStatus')[0];
+        var btnAdd = document.getElementsByTagName('button')[0];
+        var obj = {};
+        var cList = [];
+
+        //移动端menu 绑定click事件
+        menuClick();
+
+        // classUpdateMsg数据反显
+        var classUpdateMsg = JSON.parse(sessionStorage.getItem('classUpdateMsg'));
+        var tag = sessionStorage.getItem('classTag');
+        iptDate.value = classUpdateMsg.date
+        iptClassType.value = classUpdateMsg.classType;
+        iptClassStatus.value = classUpdateMsg.status;
+
+        btnAdd.onclick = function (e) {
+            if (iptDate.value != '' && iptClassType.value != '' && iptClassStatus.value != '') {
+                obj = {
+                    date: iptDate.value,
+                    classType: iptClassType.value,
+                    status: iptClassStatus.value
+                };
+                cList = JSON.parse(localStorage.getItem('cList'));
+                cList[tag] = obj;
+                localStorage.setItem('cList', JSON.stringify(cList));
+
+                // 更改、并保存完成，即移除session中的stuUpdateMsg和tag
+                sessionStorage.removeItem('classUpdateMsg')
+                sessionStorage.removeItem('classTag')
+
+                alert('已保存！');
+                iptDate.value = '';
+                iptClassType.value = '';
+                iptClassStatus.value = '';
+                location.href = './classManage.html';
+
+            } else {
+                alert('请填写完整！')
+            }
+            e.preventDefault();
+        }
+        function menuClick() {
+            var menu = document.querySelector('.menu');
+            var nav = document.getElementsByTagName('nav')[0];
+            var content = document.getElementsByClassName('content')[0];
+            var flag = true;
+            //阻止后代menu的事件冒泡，以免影响祖先body的click事件
+            menu.onclick = function (e) {
+                if (flag) {
+                    nav.style.height = '150px';
+                    content.classList.add('radius');
+                    flag = false;
+                } else {
+                    nav.style.height = '0';
+                    content.classList.remove('radius');
+                    flag = true;
+                }
+                e.stopPropagation();//点击menu时避免触发window.onclik，需要阻止冒泡
+            }
+            // menu展开时，点击整个界面任意区域，menu会自动收起
+            window.onclick = function () {
+                if (!flag) {
+                    nav.style.height = '0';
+                    flag = true;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

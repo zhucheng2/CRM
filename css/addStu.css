@@ -1,0 +1,73 @@
+.content {
+    display: flex;
+    flex-direction: column;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    font-size: 20px;
+    margin: auto;
+}
+
+.stu-name,
+.stu-id {
+    display: flex;
+    align-items: center;
+    width: 300px;
+    height: 40px;
+}
+
+input[type='text'] {
+    box-sizing: border-box;
+    border: 1px solid #1b4686;
+    border-radius: 20px;
+    outline: none;
+    line-height: 2;
+    font-size: 20px;
+    align-items: center;
+    cursor: pointer;
+}
+
+input[type='text']:hover {
+    border: 2px solid #1b4686;
+}
+
+form>div {
+    margin: 10px 0;
+    white-space: nowrap;
+}
+
+.btn input,
+.btn button {
+    width: 40%;
+    height: 40px;
+    /* 单元格中单位要用百分比 */
+    line-height: 2;
+    background-color: orange;
+    border-width: 0;
+    border-radius: 6px;
+    font-size: 20px;
+    color: #fff;
+    cursor: pointer;
+}
+
+label[for='female'],
+select {
+    margin-left: 50px;
+}
+
+.age-class input,
+select {
+    height: 30px;
+}
+
+.btn {
+    display: flex;
+    justify-content: space-between;
+}
+
+input,
+select {
+    text-align: center;
+}

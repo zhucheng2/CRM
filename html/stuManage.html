@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/public.css">
+    <title>CRM管理系统</title>
+    <script>
+        // 未登录，则先登录
+        if (!localStorage.getItem('curUser')) {
+            alert('请登录！');
+            location.replace('../index.html');
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img class="logo" src="../asset/images/logo.png" alt="">
+        <img class="menu" src="../asset/menu.svg"></img>
+        <ul>
+            <li><a href="#"><img src="../asset/images/avatar.png" alt=""><span>姓名</span></a></li>
+            <li><a href="#"><img src="../asset/images/notice.png" alt="">通知公告</a></li>
+            <li><a href="../index.html"><img src="../asset/images/quit.png" alt="">退出登录</a></li>
+        </ul>
+    </header>
+    <nav id="nav">
+        <a href="#">教学点管理</a>
+        <ul class="sidebar">
+            <li>
+                <a href="./classManage.html">班级管理</a>
+            </li>
+            <li>
+                <a href="./addClass.html">添加班级</a>
+            </li>
+            <li class="active">
+                <a href="#">学生管理</a>
+            </li>
+            <li>
+                <a href="./addStu.html">添加学生</a>
+            </li>
+        </ul>
+    </nav>
+    <div class="main">
+        <div class="nav-l">
+            <a href="#">教学点管理</a>
+            <ul class="sidebar">
+                <li>
+                    <a href="./classManage.html">班级管理</a>
+                </li>
+                <li>
+                    <a href="./addClass.html">添加班级</a>
+                </li>
+                <li class="active">
+                    <a href="#">学生管理</a>
+                </li>
+                <li>
+                    <a href="./addStu.html">添加学生</a>
+                </li>
+            </ul>
+        </div>
+        <div class="content">
+            <div>学生列表</div>
+            <!-- cellspacing="0" -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>年龄</th>
+                        <th>性别</th>
+                        <th>学号</th>
+                        <th>班级</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!--  <tr>
+                        <td>张三</td>
+                        <td>18</td>
+                        <td>男</td>
+                        <td>001</td>
+                        <td>2207</td>
+                        <td><button class="updateStu">编辑</button><button class="deleteStu">删除</button></td>
+                    </tr> -->
+                </tbody>
+            </table>
+            <footer>
+                <div id="page-num"></div>
+                共&nbsp;<span id="total">0</span>&nbsp;条记录
+            </footer>
+        </div>
+    </div>
+    <script>
+        // 进入classManage之前，移除curPage
+
+        /*  window.addEventListener('beforeunload', function (e) {
+             // 可以获取 即将导航到的 新URL
+             var nextUrl = e.currentTarget.document.activeElement.href;
+             // 检查URL的路径
+             if (nextUrl.indexOf('classManage.html') > -1) {
+                 sessionStorage.removeItem('curPage');
+             }
+             console.log(nextUrl);
+             e.returnValue = '';
+         }); */
+
+        window.addEventListener('beforeunload', function (e) {
+            //  if (e.currentTarget.location.href !== e.target.activeElement.href) {
+            // 检查用户是否将要导航到名为 "classManage.html" 的页面
+            if (e.target.activeElement.href.indexOf('classManage.html') > -1) {
+                sessionStorage.removeItem('curPage');
+            }
+            //  }
+            // e.returnValue = '';
+        });
+    </script>
+    <script>
+        //登出操作、获取当前用户
+        var curUser = document.querySelector('header li:first-child span');
+        var logout = document.querySelector('header li:last-child');
+        var curPage = 1;//当前页
+        var pageMaxSum = 7;//每页的 列表中 最多几项数据
+
+        // 刷新后，仍回到 之前的页面
+        sessionStorage.getItem('curPage') != null ? curPage = sessionStorage.getItem('curPage') : curPage = 1;
+
+        // 顶部menu、登出按钮
+        curUser.textContent = localStorage.getItem('curUser');
+        logout.onclick = function () {
+            localStorage.removeItem('curUser');
+            sessionStorage.removeItem('curPage');
+        }
+
+        // localStorage有数据即使用，没数据则使用 假数据
+        var stuList = [];
+        if (localStorage.getItem('stuList') && localStorage.getItem('stuList') != '"[]"') {
+            stuList = JSON.parse(localStorage.getItem('stuList'));
+        } else {
+            stuList = [
+                { sName: "王五", sId: "001", sAge: "16", sClass: "2305", sSex: "男" },
+                { sName: "流行", sId: "002", sAge: "16", sClass: "2304", sSex: "女" },
+                { sName: "流行", sId: "003", sAge: "16", sClass: "2303", sSex: "男" },
+                { sName: "流行", sId: "005", sAge: "23", sClass: "2303", sSex: "女" },
+                { sName: "流行", sId: "010", sAge: "16", sClass: "2303", sSex: "女" },
+                { sName: "萨芬", sId: "019", sAge: "16", sClass: "2302", sSex: "男" }
+            ];
+            localStorage.setItem('stuList', JSON.stringify(stuList));
+        }
+
+        // 1.首屏渲染 初始数据
+        // 2.编辑页面操作并返回后，重新渲染最新数据
+        showData(curPage);
+        //移动端menu 绑定click事件
+        menuClick();
+
+        // 渲染数据
+        function showData(curPage) {
+            var tbodyEle = document.querySelector('tbody');
+            var str = '';
+            var pageTotal = null;//所有数据共有几页，受pageMaxSum影响
+            var numSum = null;//页码栏的页码 数量
+
+            // 为 首页 截取的部分数据
+            var _stuList = stuList.slice(pageMaxSum * (curPage - 1), pageMaxSum * (curPage - 1) + pageMaxSum);
+
+            // 删除列表操作后，若当前页新获取的列表中没有数据，即已不存在该页时，则把上一页设置为 当前页【curPage变成0时，设置为第一页】。并重新获取并渲染上一页的数据
+            if (_stuList.length == 0) {
+                curPage == 0 ? curPage = 1 : --curPage;
+                _stuList = stuList.slice(pageMaxSum * (curPage - 1), pageMaxSum * (curPage - 1) + pageMaxSum);
+            }
+
+            _stuList.forEach(item => {
+                str += ` <tr>
+                        <td>${item.sName}</td>
+                        <td>${item.sAge}</td>
+                        <td>${item.sSex}</td>
+                        <td>${item.sId}</td>
+                        <td>${item.sClass}</td>
+                        <td><button class="updateStu">编辑</button><button class="deleteStu">删除</button></td>
+                    </tr>`;
+            })
+            // 把数据动态渲染并挂载【页面可将innerHTML字符串解析为标签语言】
+            tbodyEle.innerHTML = str;
+
+            // 总页数
+            pageTotal = Math.ceil(stuList.length / pageMaxSum);
+
+            // 【页码渲染parseInt(numSum / 2)取整，须numSum >= 2; 另外，为保证 页码栏 第2种渲染方式 生效、须同时 numSum < pageTotal,故numSum取值为【当pageTotal = 1 时，numSum = 1；当 pageTotal >= 2 时，2 <= numSum < pageTotal】, numSum值受stuList.length或pageMaxSum的影响。其值一旦确定，不要轻易改动，不然页码渲染可能出错！】
+
+            // numSum取值有 4种情况，
+            if (0 == pageTotal) {//数据库没有数据时，当前页curPage=0，无需分页！
+                curPage = 0;
+            } else if (1 == pageTotal) {//数据库的所有数据 不满一页时，只有 1个页码 —— 第 1 页！
+                numSum = 1;
+            } else if (pageTotal == 2) {//  共两页时，只有 2个页码
+                numSum = 2;
+            } else if (pageTotal > 2 && pageTotal < 5) {//  2 <= numSum < pageTotal，当pageTotal < 5 时，页码栏页码数量numSum，动态调整，不过总会小于pageTotal
+                numSum = pageTotal - 1;
+            } else {//当pageTotal >= 5 时，页码栏页码数量numSum固定为 5个
+                numSum = 5;
+            }
+
+            // 每次渲染数据后，都要再次绑定事件
+            updateStu(curPage);
+            deleteStu(curPage);
+            // 分页
+            page(curPage, numSum, pageTotal);
+        }
+        // 每次 点击换页 都要 重新截取对应页面的数据，并重新 渲染
+        function pageNumClick(curPage) {
+            // 获取所有数字页码【不包含 上一页、下一页】，准备绑定点击事件
+            var numEle = document.querySelectorAll('#page-num > div:not(.prev):not(.next)');
+            var prevEle = document.querySelector('#page-num > .prev');
+            var nextEle = document.querySelector('#page-num > .next');
+            for (let i = 0; i < numEle.length; i++) {
+                numEle[i].onclick = function (e) {
+                    /* for (let i = 0; i < stuList.length; i++) {
+                        numEle[i].className = '';
+                    } */
+                    curPage = e.target.textContent;
+                    showData(curPage);//渲染 列表数据
+                }
+            }
+            if (prevEle != null) {
+                prevEle.onclick = function () {
+                    curPage--;
+                    showData(curPage);
+                }
+            }
+            if (nextEle != null) {
+                nextEle.onclick = function () {
+                    curPage++;
+                    showData(curPage);
+                }
+            }
+        }
+        function page(curPage, numSum, pageTotal) {
+            // 数据统计、分页
+            /*定义 页码栏中数字页码数numSum为 6，共total为12页。分页 思路：3种渲染 情况。
+ 
+            i = 0 1 2 3 4 5       页码的索引
+                1 2 3 4 5 6    	cur = 4
+            页码：i + 1
+            cur[cur <= 6 / 2 + 1] 1, 2, 3, 4
+ 
+            i = 0 1 2 3 4 5         页码的索引
+                2 3 4 5 6 7	    cur = 5
+            页码：cur - 6 / 2 + i
+            cur[5, 9] 5, 6, 7, 8, 9
+ 
+            i = 0 1 2 3 4 5           页码的索引
+                7 8 9 10 11 12	cur = 10
+            页码：total - 6 + i + 1
+            cur[cur >= 12 - 6 / 2 + 1] 10, 11, 12 */
+
+            var st = '', numArr = [], halfNumSum = parseInt(numSum / 2);
+            var pageNumEle = document.getElementById('page-num');
+            var totalEle = document.getElementById('total');
+            totalEle.textContent = stuList.length;
+            if (curPage > 0 && curPage <= halfNumSum + 1) {
+                for (let i = 0; i < numSum; i++) {
+                    st += `<div>${Number(i) + 1}</div>`;
+                    numArr.push(Number(i) + 1);
+                }
+                if (pageTotal > 2) {//总页数 大于2 时，才需要“下一页”
+                    st = `${st}<div class='next'>下一页</div>`;
+                }
+            } else if (curPage > halfNumSum + 1 && curPage < pageTotal - halfNumSum + 1) {
+                for (let i = 0; i < numSum; i++) {
+                    st += `<div>${curPage - halfNumSum + i}</div>`;
+                    numArr.push(curPage - halfNumSum + i);
+                }
+                st = `<div class='prev'>上一页</div>${st}<div class='next'>下一页</div>`;
+            } else if (curPage >= pageTotal - halfNumSum + 1 && curPage <= pageTotal) {
+                for (let i = 0; i < numSum; i++) {
+                    st += `<div>${Number(pageTotal - numSum) + i + 1}</div>`;
+                    numArr.push(Number(pageTotal - numSum) + i + 1);
+                }
+                st = `<div class='prev'>上一页</div>${st}`;
+            }
+            pageNumEle.innerHTML = st;
+            var numEle = document.querySelectorAll('#page-num > div:not(.prev):not(.next)');
+            // 在页码栏中所有数字组成的页码数组numArr中，找到当前页码curPage所对应的索引，添加样式【curPage指的当前页码，而不是页码的索引】
+            if (numArr.indexOf(Number(curPage)) != -1) {
+                numEle[numArr.indexOf(Number(curPage))].className = 'on';
+            }
+            // 每次点击换页后，将最新页存储在sessionStorage中，防止刷新后curPage被重置
+            sessionStorage.setItem('curPage', curPage);
+            // 页码点击
+            pageNumClick(curPage);
+        }
+        // 编辑 学生信息
+        function updateStu(curPage) {
+            stuList = JSON.parse(localStorage.getItem('stuList'));
+            var updateStuEle = document.querySelectorAll('.updateStu');
+            updateStuEle.forEach((ele, index) => {
+                ele.onclick = function () {
+                    sessionStorage.setItem('stuUpdateMsg', JSON.stringify(stuList[pageMaxSum * (curPage - 1) + index]));
+                    sessionStorage.setItem('stuTag', pageMaxSum * (curPage - 1) + index);
+                    location.href = './updateStu.html';
+                    // location.replace('./updateStu.html');
+                }
+            });
+        }
+
+        // 删除 学生信息
+        function deleteStu(curPage) {
+            stuList = JSON.parse(localStorage.getItem('stuList'));
+            var deleteStu = document.querySelectorAll('.deleteStu');
+            deleteStu.forEach((ele, index) => {
+                ele.onclick = function () {
+                    // 把原数组中指定条目的数据删除
+                    stuList.splice(pageMaxSum * (curPage - 1) + index, 1);
+                    // 更新数据库
+                    localStorage.setItem('stuList', JSON.stringify(stuList));
+                    // 每删除操作一次就拿最新数据 重新渲染
+                    showData(curPage);
+                }
+            });
+        }
+        function menuClick() {
+            var menu = document.querySelector('.menu');
+            var nav = document.getElementsByTagName('nav')[0];
+            var content = document.getElementsByClassName('content')[0];
+            var flag = true;
+            //阻止后代menu的事件冒泡，以免影响祖先body的click事件
+            menu.onclick = function (e) {
+                if (flag) {
+                    nav.style.height = '150px';
+                    content.classList.add('radius');
+                    flag = false;
+                } else {
+                    nav.style.height = '0';
+                    content.classList.remove('radius');
+                    flag = true;
+                }
+                e.stopPropagation();//点击menu时避免触发window.onclik，需要阻止冒泡
+            }
+            // menu展开时，点击整个界面任意区域，menu会自动收起
+            window.onclick = function () {
+                if (!flag) {
+                    nav.style.height = '0';
+                    flag = true;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

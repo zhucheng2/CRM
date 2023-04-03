@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/public.css">
+    <link rel="stylesheet" href="./css/common.css">
+    <title>CRM管理系统</title>
+    <script>
+        //若已登录，不允许访问该页面
+        if (localStorage.getItem('curUser')) {
+            location.replace('./html/classManage.html');
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <img src="./asset/login.jpg" alt="">
+        <form class="box" method="get" action="#">
+            <div class="top">
+                <h2>CRM管理系统</h2>
+                <a href="#">注册</a>
+            </div>
+            <h1>登录</h1>
+            <div class="loginBox">
+                <span>账号</span>&nbsp;&nbsp;&nbsp;&nbsp;<span id="tag"></span>
+                <p class="tips">以字母开头，由字母、数字、或下划线 组成的4~6位字符</p>
+                <div><input type="text" name="uName" id="uName"></div>
+                <span>密码</span>
+                <p class="tips">由字母、数字、或下划线 组成的4~6位字符</p>
+                <input type="password" name="psw" id="psw">
+                <div class="check">
+                    <span>确认密码</span>
+                    <input type="password" name="_psw" id="_psw">
+                </div>
+            </div>
+            <button>登录</button>
+        </form>
+    </div>
+    <script>
+        var tagEntry = true;//注册、登录状态标志，默认先进入 login页面
+        var uName = document.getElementById('uName');
+        var psw = document.getElementById('psw');
+        var _psw = document.getElementById('_psw');
+        var btnSubmit = document.getElementsByTagName('button')[0];
+        var btnA = document.querySelector('.top a');
+        var tag = document.getElementById('tag');
+        var userList = [
+            { user: 'admin', psw: 'admin' }
+        ];
+        var userArr = [];
+        var ind = null;
+        // 判断localStorage中是否有用户数据
+        var userData = localStorage.getItem('userList');
+        if (userData && userData != '[]') {
+            userList = JSON.parse(userData);
+        } else {
+            localStorage.setItem('userList', JSON.stringify(userList));
+        }
+
+        userCheck();//验证用户 是否已注册
+        cssContral();//控制登录、注册界面
+
+        // 提交按钮 事件绑定
+        btnSubmit.onclick = function (e) {
+            logReg();
+            e.preventDefault();
+        };
+
+        // 样式控制
+        function cssContral() {
+            var container = document.querySelector('.container');
+            var imgEle = document.querySelector('.container>img');
+            var bHEle = document.querySelector('.box>h1');
+            var checkEle = document.querySelector('.check');
+            var formEle = document.getElementsByTagName('form')[0];
+            // 切换注册、登录按钮
+            btnA.onclick = function () {
+                tag.innerHTML = uName.value = _psw.value = psw.value = '';//清空 文本框
+                if (tagEntry) {//进入 register
+                    tagEntry = false;
+                    formEle.action = 'register';
+
+                    btnSubmit.textContent = bHEle.textContent = '注册';
+                    btnA.textContent = '登录';
+                    checkEle.className = 'checkShow';
+                    container.style.background = 'rgb(156, 148, 208)';
+                    imgEle.style.borderRadius = '0px';
+                    imgEle.style.opacity = '0';
+                    // 切换按钮后，等待过渡完成后，再显示新图片
+                    var timer = setTimeout(function () {
+                        imgEle.src = './asset/register.jpg';
+                        // 恢复新照片的透明度1
+                        imgEle.style.borderRadius = '60px';
+                        imgEle.style.opacity = '1';
+                        clearTimeout(timer);
+                    }, 500);
+                } else {//进入 login
+                    tagEntry = true;
+                    formEle.action = 'login';
+
+                    btnSubmit.textContent = bHEle.textContent = '登录';
+                    btnA.textContent = '注册';
+                    checkEle.className = 'check';
+                    container.style.background = 'rgb(228, 218, 232)';
+                    imgEle.style.borderRadius = '0px';
+                    imgEle.style.opacity = '0';
+                    var timer = setTimeout(function () {
+                        imgEle.src = './asset/login.jpg';
+                        imgEle.style.borderRadius = '60px';
+                        imgEle.style.opacity = '1';
+                        clearTimeout(timer);
+                    }, 500);
+                }
+                console.log(formEle.action);//根据tagEntry不同状态 输出对应form请求地址
+            }
+        }
+
+        function logReg() {
+            const reg = /^([a-zA-Z]\w{3,5})$/;
+            const _reg = /^\w{3,5}$/;
+            ind = userArr.indexOf(uName.value);
+
+            if (tagEntry && uName.value != '' && psw.value != '') {//在 login页面 操作
+                if (ind === -1) {
+                    alert('该用户 不存在！');
+                } else {
+                    if (reg.test(uName.value) && _reg.test(psw.value)) {
+                        if (userList[ind].psw == psw.value) {
+                            localStorage.setItem('curUser', userArr[ind]);
+                            location.replace('./html/classManage.html');
+                        } else {
+                            alert('密码错误，请重新输入！');
+                        }
+                    } else {
+                        alert('账号、或密码 格式错误');
+                    }
+                }
+            } else if (!tagEntry && uName.value != '' && psw.value != '' && _psw.value != '') {///在 register页面 操作
+                if (reg.test(uName.value) && _reg.test(psw.value)) {
+                    if (ind != -1) {
+                        alert('已存在 该用户！');
+                    } else if (ind === -1 && psw.value == _psw.value) {
+                        userList.push({ user: `${uName.value}`, psw: `${psw.value}` });
+                        localStorage.setItem('userList', JSON.stringify(userList));
+                        alert("已成功注册！")
+                        btnA.click();//注册成功后，切换到login页
+                        _psw.value = psw.value = '';//切换到login页前，密码清空
+                    } else if (ind === -1 && psw.value != _psw.value) {
+                        alert('两次输入密码 不一致！');
+                    }
+                    /*  if (item.user != uName.value) {
+                         console.log(item.user != uName.value);
+                     } else {
+                         alert('该用户名 已存在！');
+                     } */
+                } else {
+                    alert('账号、或密码 格式错误');
+                }
+            } else {
+                alert('请填写完整！');
+            }
+        }
+
+        function userCheck() {
+            //遍历userList，目标user是否已注册。若找到，则返回其 索引
+            for (let item of userList) {
+                userArr.push(item.user);
+            }
+            uName.onblur = function () {
+                if (this.value != '') {
+                    ind = userArr.indexOf(uName.value);
+                    if (tagEntry && ind != -1) {
+                        tag.innerHTML = '&radic;';//登录界面，已注册用户有效，打对勾
+                    } else if (!tagEntry && ind === -1) {
+                        tag.innerHTML = '&radic;';//注册界面，新用户有效，打对勾
+                    } else {
+                        tag.innerHTML = '&chi;';//其它，打 X
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+
+</html>

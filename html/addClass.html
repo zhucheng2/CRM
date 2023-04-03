@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/public.css">
+    <title>CRM管理系统</title>
+    <script>
+        // 未登录，则先登录
+        if (!localStorage.getItem('curUser')) {
+            alert('请登录！');
+            location.replace('../index.html');
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img class="logo" src="../asset/images/logo.png" alt="">
+        <img class="menu" src="../asset/menu.svg"></img>
+        <ul>
+            <li><a href="#"><img src="../asset/images/avatar.png" alt=""><span>姓名</span></a></li>
+            <li><a href="#"><img src="../asset/images/notice.png" alt="">通知公告</a></li>
+            <li><a href="../index.html"><img src="../asset/images/quit.png" alt="">退出登录</a></li>
+        </ul>
+    </header>
+    <nav id="nav">
+        <a href="#">教学点管理</a>
+        <ul class="sidebar">
+            <li>
+                <a href="./classManage.html">班级管理</a>
+            </li>
+            <li class="active">
+                <a href="#">添加班级</a>
+            </li>
+            <li>
+                <a href="./stuManage.html">学生管理</a>
+            </li>
+            <li>
+                <a href="./addStu.html">添加学生</a>
+            </li>
+        </ul>
+    </nav>
+    <div class="main">
+        <div class="nav-l">
+            <a href="#">教学点管理</a>
+            <ul class="sidebar">
+                <li>
+                    <a href="./classManage.html">班级管理</a>
+                </li>
+                <li class="active">
+                    <a href="#">添加班级</a>
+                </li>
+                <li>
+                    <a href="./stuManage.html">学生管理</a>
+                </li>
+                <li>
+                    <a href="./addStu.html">添加学生</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <div>添加班级</div>
+            <form action="#" method="get">
+                <!-- cellspacing="0" -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th>开课时间</th>
+                            <th>课程名称</th>
+                            <th>班级状态</th>
+                            <th>课程操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="month" name="date" id="" /></td>
+                            <td>
+                                <select name="classType" id="">
+                                    <option value="" disabled selected>请选择</option>
+                                    <option>前端</option>
+                                    <option>java</option>
+                                    <option>python</option>
+                                    <option>c++</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="classStatus" id="">
+                                    <option value="" disabled selected>请选择</option>
+                                    <option>报名中</option>
+                                    <option>已开课</option>
+                                    <option>已结业</option>
+                                </select>
+                            </td>
+                            <td><button class="add-btn">添加</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </form>
+        </div>
+    </div>
+    <script>
+        //登出操作、获取当前用户
+        var curUser = document.querySelector('header li:first-child span');
+        var logout = document.querySelector('header li:last-child');
+        curUser.textContent = localStorage.getItem('curUser');
+        logout.onclick = function () {
+            localStorage.removeItem('curUser');
+            sessionStorage.removeItem('curPage');
+        }
+
+        var iptDate = document.getElementsByName('date')[0];
+        var iptClassType = document.getElementsByName('classType')[0];
+        var iptClassStatus = document.getElementsByName('classStatus')[0];
+        var btnAdd = document.getElementsByTagName('button')[0];
+        var obj = {};
+        var cList = [];
+
+        //移动端menu 绑定click事件
+        menuClick();
+
+        btnAdd.onclick = function (e) {
+            e.preventDefault();
+
+            if (iptDate.value != '' && iptClassType.value != '' && iptClassStatus.value != '') {
+                obj = {
+                    date: iptDate.value,
+                    classType: iptClassType.value,
+                    status: iptClassStatus.value
+                };
+                cList = JSON.parse(localStorage.getItem('cList'));
+                cList.push(obj);
+
+                // 添加 班级后，需要对 日期 重排序！！
+                dateDownSort();
+
+                alert('已添加！');
+                iptDate.value = '';
+                iptClassType.value = '';
+                iptClassStatus.value = '';
+                location.href = './classManage.html';
+            } else {
+                alert('请填写完整！')
+            }
+        }
+        // 班级列表，以日期降序
+        function dateDownSort() {
+            var _classList = [], dateArr = [];
+            cList.forEach((item, ind) => {
+                // 将每个日期对应的索引拼接到最后，整体 降序！
+                dateArr.push(item.date.replace('-', '') + String(ind).padStart(3, '0'));
+            });
+            dateArr = dateArr.sort((a, b) => { return b - a });
+            console.log(dateArr);
+            // 再分离出、并遍历 排序后的索引数组dateArr，返回 以日期降序的 班级列表_classList
+            _classList = dateArr.map(ele => {
+                return cList[Number(ele.slice(6))];
+            });
+
+            // 降序后的班级列表放入localStorage,留给addClass、updateClass使用
+            var cLevelList = dateArr.map(ele => {
+                return ele.slice(2, 6);
+            });
+            localStorage.setItem('cLevelList', JSON.stringify(Array.from(new Set(cLevelList))));
+            // 添加 操作时，必须重排序，更新localStorage
+            localStorage.setItem('cList', JSON.stringify(_classList));//降序后位置发生改变 必须更新localStorage！！！
+        }
+        function menuClick() {
+            var menu = document.querySelector('.menu');
+            var nav = document.getElementsByTagName('nav')[0];
+            var content = document.getElementsByClassName('content')[0];
+            var flag = true;
+            //阻止后代menu的事件冒泡，以免影响祖先body的click事件
+            menu.onclick = function (e) {
+                if (flag) {
+                    nav.style.height = '150px';
+                    content.classList.add('radius');
+                    flag = false;
+                } else {
+                    nav.style.height = '0';
+                    content.classList.remove('radius');
+                    flag = true;
+                }
+                e.stopPropagation();//点击menu时避免触发window.onclik，需要阻止冒泡
+            }
+            // menu展开时，点击整个界面任意区域，menu会自动收起
+            window.onclick = function () {
+                if (!flag) {
+                    nav.style.height = '0';
+                    flag = true;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
